@@ -216,7 +216,7 @@ function _drift_charge!(
     else
         one(T)
     end
-    verbose && trapping && @info "Simulation with a $(CC) lifetime of $(τ)s."
+    verbose && trapping && @info "Simulation with a $(CC) lifetime of $(τ_p)s."
 
     #Virtual drift module
     vdv = det.virtual_drift_volumes
