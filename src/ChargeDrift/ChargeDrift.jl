@@ -251,7 +251,7 @@ const CD_OUTSIDE = 0x01
 const CD_BULK = 0x02
 const CD_FLOATING_BOUNDARY = 0x04 # not 0x03, so that one could use bit operations here...
 
-function get_crossing_pos(  det::SolidStateDetector{T}, pt_in::CartesianPoint{T}, pt_out::CartesianPoint{T})::CartesianPoint{T} where {T <: SSDFloat, S}
+function get_crossing_pos(  det::SolidStateDetector{T}, pt_in::CartesianPoint{T}, pt_out::CartesianPoint{T})::CartesianPoint{T} where {T <: SSDFloat}
     
     # check if the points are already in contacts                    
     if pt_in in det.contacts return pt_in end  
