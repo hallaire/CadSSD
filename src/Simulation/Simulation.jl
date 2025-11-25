@@ -1198,11 +1198,11 @@ function calculate_electric_field!(sim::Simulation{T, CS}; n_points_in_φ::Union
 end
 
 function drift_charges( sim::Simulation{T}, starting_positions::VectorOfArrays{CartesianPoint{T}}, energies::VectorOfArrays{T};
-                        Δt::RealQuantity = 5u"ns", max_nsteps::Int = 1000, diffusion::Bool = false, self_repulsion::Bool = false, 
-                        end_drift_when_no_field::Bool = true, geometry_check::Bool = false, verbose::Bool = true )::Vector{EHDriftPath{T}} where {T <: SSDFloat}
+                        Δt::RealQuantity = 5u"ns", max_nsteps::Int = 1000, diffusion::Bool = false, trapping::Bool = false, σ_init::T = 1.0e-6, 
+                        verbose::Bool = true )::Vector{EHDriftPath{T}} where {T <: SSDFloat}
     return _drift_charges(   sim.detector, sim.point_types.grid, sim.point_types, starting_positions, energies, 
                              interpolated_vectorfield(sim.electric_field), Δt;
-                             max_nsteps, diffusion, self_repulsion, end_drift_when_no_field, geometry_check, verbose)
+                             max_nsteps, diffusion, trapping, σ_init, verbose)
 end
 
 function get_signal(sim::Simulation{T, CS}, drift_paths::Vector{EHDriftPath{T}}, energy_depositions::Vector{T}, contact_id::Int; Δt::TT = T(5) * u"ns", signal_unit::Unitful.Units = u"e_au") where {T <: SSDFloat, CS, TT}

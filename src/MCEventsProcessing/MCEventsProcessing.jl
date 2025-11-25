@@ -37,13 +37,12 @@ If [LegendHDF5IO.jl](https://github.com/legend-exp/LegendHDF5IO.jl) is loaded, t
 * `max_nsteps::Int = 1000`: Maximum number of steps in the drift of each hit. 
 * `Δt::RealQuantity = 4u"ns"`: Time step used for the drift.
 * `diffusion::Bool = false`: Activate or deactive diffusion of charge carriers via random walk.
-* `self_repulsion::Bool = false`: Activate or deactive self-repulsion of charge carriers of the same type.
+* `trapping::Bool = false`: Activate or deactive trapping of charge carriers in the semiconductor.
+* `σ_init::RealQuantity = 1.0e-6`: Standard deviation of the Gaussian distribution for the initial charge cloud.
 * `number_of_carriers::Int = 1`: Number of charge carriers to be used in the N-Body simulation of an energy deposition. 
 * `number_of_shells::Int = 1`: Number of shells around the `center` point of the energy deposition.
 * `signal_unit::Unitful.Units = u"e_au"`: Unit of the returned waveform (charge or energy).
 * `max_interaction_distance = NaN`: Maximum distance for which charge clouds will interact with each other (if `NaN`, then all charge clouds drift independently).
-* `end_drift_when_no_field::Bool = true`: Activate or deactive drifting termination when the electric field is exactly zero.
-* `geometry_check::Bool = false`: Perform extra geometry checks when determining if charge carriers have reached a contact.
 * `verbose = false`: Activate or deactivate additional info output.
 * `chunk_n_physics_events::Int = 1000` (`LegendHDF5IO` only): Number of events that should be saved in a single HDF5 output file.
 
@@ -67,13 +66,11 @@ function simulate_waveforms( mcevents_table::AbstractVector{<:NamedTuple}, sim::
                              Δt::RealQuantity = 4u"ns",
                              max_nsteps::Int = 1000,
                              diffusion::Bool = false,
-                             self_repulsion::Bool = false,
+                             trapping::Bool = false,
+                             σ_init::RealQuantity = 1.0e-6,
                              number_of_carriers::Int = 1,
                              number_of_shells::Int = 1,
                              signal_unit::Unitful.Units = u"e_au",
-                             max_interaction_distance::Union{<:Real, <:LengthQuantity} = NaN,
-                             end_drift_when_no_field::Bool = true,
-                             geometry_check::Bool = false,
                              verbose::Bool = false ) where {T <: SSDFloat}
     mcevents = TypedTables.Table(mcevents_table)
     n_total_physics_events = length(mcevents)
@@ -93,7 +90,7 @@ function simulate_waveforms( mcevents_table::AbstractVector{<:NamedTuple}, sim::
 
     # First simulate drift paths
     drift_paths_and_edeps = _simulate_charge_drifts(mcevents, sim, Δt, max_nsteps, electric_field, 
-        diffusion, self_repulsion, number_of_carriers, number_of_shells, max_interaction_distance, end_drift_when_no_field, geometry_check, verbose)
+        diffusion, trapping, σ_init, number_of_carriers, number_of_shells, max_interaction_distance, verbose)
     drift_paths = map(x -> vcat([vcat(ed...) for ed in x[1]]...), drift_paths_and_edeps)
     edeps = map(x -> vcat([vcat(ed...) for ed in x[2]]...), drift_paths_and_edeps)
     # now iterate over contacts and generate the waveform for each contact
@@ -178,22 +175,20 @@ end
 
 function _simulate_charge_drifts( mcevents::TypedTables.Table, sim::Simulation{T},
                                   Δt::RealQuantity, max_nsteps::Int, 
-                                  electric_field::Interpolations.Extrapolation,
+                                  electric_field::Interpolations.Extrapolation,                                  
                                   diffusion::Bool,
-                                  self_repulsion::Bool,
+                                  trapping::Bool,
+                                  σ_init::T,
                                   number_of_carriers::Int, 
                                   number_of_shells::Int,
                                   max_interaction_distance::Union{<:Real, <:LengthQuantity},
-                                  end_drift_when_no_field::Bool,
-                                  geometry_check::Bool,
                                   verbose::Bool ) where {T <: SSDFloat}
-
     @assert is_detector_hits_table(mcevents) "Table does not have the correct format"
     @showprogress map(mcevents) do phyevt
         locations, edeps = _convertEnergyDepsToChargeDeps(phyevt.pos, phyevt.edep, sim.detector; number_of_carriers, number_of_shells, max_interaction_distance, verbose)
         drift_paths = map( i -> _drift_charges(sim.detector, sim.electric_field.grid, sim.point_types, 
                 VectorOfArrays(locations[i]), VectorOfArrays(edeps[i]), electric_field, T(Δt.val) * unit(Δt);
-                max_nsteps, diffusion, self_repulsion, end_drift_when_no_field, geometry_check, verbose
+                max_nsteps, diffusion, trapping, σ_init, verbose
             ),
             eachindex(edeps)
         )

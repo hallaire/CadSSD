@@ -175,9 +175,8 @@ Calculates the electron and hole drift paths for the given [`Event`](@ref) and [
 * `max_nsteps::Int = 1000`: Maximum number of steps in the drift of each hit. 
 * `Δt::RealQuantity = 5u"ns"`: Time step used for the drift.
 * `diffusion::Bool = false`: Activate or deactive diffusion of charge carriers via random walk.
-* `self_repulsion::Bool = false`: Activate or deactive self-repulsion of charge carriers of the same type.
-* `end_drift_when_no_field::Bool = true`: Activate or deactive drifting termination when the electric field is exactly zero.
-* `geometry_check::Bool = false`: Perform extra geometry checks when determining if charge carriers have reached a contact.
+* `trapping::Bool = false`: Activate or deactive trapping of charge carriers in the semiconductor.
+* `σ_init::RealQuantity = 1.0e-6`: Standard deviation of the Gaussian distribution for the initial charge cloud.
 * `verbose = true`: Activate or deactivate additional info output.
 
 ## Example 
@@ -186,11 +185,11 @@ drift_charges!(evt, sim, Δt = 1u"ns", verbose = false)
 ```
 
 !!! note
-    Using values with units for `Δt` requires the package [Unitful.jl](https://github.com/JuliaPhysics/Unitful.jl).
+    Using values with units for `Δt` requires the package [Unitful.jl](https://github.com/PainterQubits/Unitful.jl).
 """
-function drift_charges!(evt::Event{T}, sim::Simulation{T}; max_nsteps::Int = 1000, Δt::RealQuantity = 5u"ns", diffusion::Bool = false, self_repulsion::Bool = false, end_drift_when_no_field::Bool = true, geometry_check::Bool = false, verbose::Bool = true)::Nothing where {T <: SSDFloat}
+function drift_charges!(evt::Event{T}, sim::Simulation{T}; max_nsteps::Int = 1000, Δt::RealQuantity = 5u"ns", diffusion::Bool = false, trapping::Bool = false, σ_init::T = 1.0e-6, verbose::Bool = true)::Nothing where {T <: SSDFloat}
     !in(evt, sim.detector) && move_charges_inside_semiconductor!(evt, sim.detector; verbose)
-    evt.drift_paths = drift_charges(sim, evt.locations, evt.energies; Δt, max_nsteps, diffusion, self_repulsion, end_drift_when_no_field, geometry_check, verbose)
+    evt.drift_paths = drift_charges(sim, evt.locations, evt.energies; Δt, max_nsteps, diffusion, trapping, σ_init, verbose)
     nothing
 end
 function get_signal!(evt::Event{T}, sim::Simulation{T}, contact_id::Int; Δt::RealQuantity = 5u"ns", signal_unit::Unitful.Units = u"e_au")::Nothing where {T <: SSDFloat}
@@ -218,7 +217,6 @@ The output is stored in `evt.waveforms`.
 
 ## Keywords
 * `Δt::RealQuantity = 5u"ns"`: Time steps with which the drift paths were calculated.
-* `signal_unit::Unitful.Units = u"e_au"`: Unit of the returned waveform (charge or energy).
 
 ## Example 
 ```julia
@@ -236,7 +234,7 @@ function get_signals!(evt::Event{T}, sim::Simulation{T}; Δt::RealQuantity = 5u"
     for contact in sim.detector.contacts
         if any(ismissing, sim.weighting_potentials) "No weighting potential(s) for some contact(s).." end
         if !ismissing(sim.weighting_potentials[contact.id])
-            evt.waveforms[contact.id] = get_signal(sim, evt.drift_paths, flatview(evt.energies), contact.id; Δt, signal_unit)
+            evt.waveforms[contact.id] = get_signal(sim, evt.drift_paths, flatview(evt.energies); Δt, signal_unit)
         end
     end
     nothing
@@ -260,10 +258,9 @@ The output is stored in `evt.drift_paths` and `evt.waveforms`.
 * `max_nsteps::Int = 1000`: Maximum number of steps in the drift of each hit. 
 * `Δt::RealQuantity = 5u"ns"`: Time step used for the drift.
 * `diffusion::Bool = false`: Activate or deactive diffusion of charge carriers via random walk.
-* `self_repulsion::Bool = false`: Activate or deactive self-repulsion of charge carriers of the same type.
+* `trapping::Bool = false`: Activate or deactive trapping of charge carriers in the semiconductor.
+* `σ_init::RealQuantity = 1.0e-6`: Standard deviation of the Gaussian distribution for the initial charge cloud.
 * `signal_unit::Unitful.Units = u"e_au"`: Unit of the returned waveform (charge or energy).
-* `end_drift_when_no_field::Bool = true`: Activate or deactive drifting termination when the electric field is exactly zero.
-* `geometry_check::Bool = false`: Perform extra geometry checks when determining if charge carriers have reached a contact.
 * `verbose = true`: Activate or deactivate additional info output.
 
 ## Example 
@@ -273,8 +270,9 @@ simulate!(evt, sim, Δt = 1u"ns", verbose = false)
 
 See also [`drift_charges!`](@ref) and [`get_signals!`](@ref).
 """
-function simulate!(evt::Event{T}, sim::Simulation{T}; max_nsteps::Int = 1000, Δt::RealQuantity = 5u"ns", diffusion::Bool = false, self_repulsion::Bool = false, signal_unit::Unitful.Units = u"e_au", end_drift_when_no_field::Bool = true, geometry_check::Bool = false, verbose::Bool = true)::Nothing where {T <: SSDFloat}
-    drift_charges!(evt, sim; max_nsteps, Δt, diffusion, self_repulsion, end_drift_when_no_field, geometry_check, verbose)
+function simulate!(evt::Event{T}, sim::Simulation{T}; max_nsteps::Int = 1000, Δt::RealQuantity = 5u"ns", diffusion::Bool = false, trapping::Bool = false, σ_init::T = 1.0e-6, signal_unit::Unitful.Units = u"e_au",     
+    verbose::Bool = true)::Nothing where {T <: SSDFloat}
+    drift_charges!(evt, sim; max_nsteps, Δt, diffusion, trapping, σ_init, verbose)
     get_signals!(evt, sim; Δt, signal_unit)
     nothing
 end

@@ -29,6 +29,7 @@ using StatsBase
 using Unitful
 using UnitfulAtomic
 using YAML
+using Distributions
 
 include("ka_compat.jl")
 
@@ -81,7 +82,8 @@ export calculate_stored_energy, calculate_mutual_capacitance, calculate_capacita
 export simulate_waveforms
 export run_geant4_simulation
 export Simulation, simulate!
-export Event, drift_charges!
+export Event, drift_charges!, get_signals!, get_signal
+export flatview
 export add_baseline_and_extend_tail
 export NBodyChargeCloud
 

@@ -66,6 +66,12 @@ material_properties[:Al] = (
     ρ = 2.6989u"g*cm^-3"
 )
 
+material_properties[:Pt] = (
+    name = "Platinum",
+      ϵ_r = 1,
+    ρ = 21.45u"g*cm^-3"
+)
+
 material_properties[:LAr] = (
     name = "liquid Argon",
     E_ionisation = 26.0u"eV", # https://doi.org/10.1088/0370-1328/85/6/328
@@ -97,14 +103,37 @@ material_properties[:CdZnTe] = (
     E_ionisation = 4.64u"eV",
     f_fano = 0.089, # https://doi.org/10.1557/PROC-487-101
     ϵ_r = 10.9,
-    ρ = 5.78u"g*cm^-3"
+    ρ = 5.78u"g*cm^-3",
+    lifetime_electrons = 3000 * u"ns",             #300 K
+    lifetime_holes = 1000 * u"ns",                 #300 K
+    De = 25.9 * u"cm^2/s",                         #300 K
+    Dh = 1.29 * u"cm^2/s",                         #300 K
+    μ_e = 1000 * u"cm^2/(V*s)",
+    μ_h = 50 * u"cm^2/(V*s)"
 )
+
+material_properties[:CdTe] = (
+    name = "Cadmium telluride",
+    E_ionisation = 4.42*1e-3 * u"keV",
+    f_fano = 0.15,
+    ϵ_r = 10.3,
+    ρ = 5.85 * u"g*cm^-3",
+    lifetime_electrons = 3000.0 * u"ns",
+    lifetime_holes = 1300.0 * u"ns",
+    De = 27.144593574867194 * u"cm^2/s",
+    Dh = 2.326679449274331 * u"cm^2/s",
+    μ_e = 1050.0 * u"cm^2/(V*s)",
+    μ_h = 90.0 * u"cm^2/(V*s)"
+)
+
+#-------H. Allaire--------
 
 material_properties[:Pb] = (
     name = "Lead",
     ϵ_r = 1e6, # high value for lead as for conductor. Usage of lead is shielding.
     ρ = 11.35u"g*cm^-3"
 )
+
 # Add new materials above this line
 # and just put different spellings into the dict `materials` below
 
@@ -117,6 +146,7 @@ materials = Dict{String, Symbol}(
     "Al"  => :Al,
     "LAr" => :LAr,
     "CZT" => :CdZnTe,
+    "CdTe" => :CdTe,
     "Si" => :Si,
     "Lead" => :Pb
 )
