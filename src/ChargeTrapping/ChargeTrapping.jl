@@ -21,17 +21,6 @@ This model is the default when no charge trapping model is defined in the config
 """
 struct NoChargeTrappingModel{T <: SSDFloat} <: AbstractChargeTrappingModel{T} end
 
-function _signal!(
-    ::NoChargeTrappingModel{T},
-    q::Base.RefValue{T},
-    w::T,
-    ::Base.RefValue{T};
-    kwargs...
-) where {T <: SSDFloat}
-    
-    return w * q[]
-end
-
 function _calculate_signal( 
         ctm::NoChargeTrappingModel{T},
         path::AbstractVector{CartesianPoint{T}}, 
@@ -44,11 +33,8 @@ function _calculate_signal(
     tmp_signal::Vector{T} = Vector{T}(undef, length(pathtimestamps))
 
     q = Ref(charge)
-    running_sum = Ref(zero(T))
-    
-    @inbounds for i in eachindex(tmp_signal)
-        w = get_interpolation(wpot, path[i], S)::T
-        tmp_signal[i] = _signal!(ctm, q, w, running_sum)
+    @inbounds Threads.@threads for i in eachindex(tmp_signal)
+        tmp_signal[i] = get_interpolation(wpot, path[i], S)::T * q[]
     end
 
     tmp_signal
