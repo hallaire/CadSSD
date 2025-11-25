@@ -234,7 +234,7 @@ function get_signals!(evt::Event{T}, sim::Simulation{T}; Δt::RealQuantity = 5u"
     for contact in sim.detector.contacts
         if any(ismissing, sim.weighting_potentials) "No weighting potential(s) for some contact(s).." end
         if !ismissing(sim.weighting_potentials[contact.id])
-            evt.waveforms[contact.id] = get_signal(sim, evt.drift_paths, flatview(evt.energies); Δt, signal_unit)
+            evt.waveforms[contact.id] = get_signal(sim, evt.drift_paths, flatview(evt.energies), contact.id; Δt, signal_unit)
         end
     end
     nothing
